@@ -16,6 +16,7 @@ process CALL_ISOTYPES {
     path "isotype_groups.tsv",          emit: groups
     path "isotype_comparison.pdf",      emit: comparison
     path "wi_isotype_sample_sheet.txt", emit: samplesheet
+    path "isotype_summary.txt",         emit: summary
     path "versions.yml",                emit: versions
     
     when:

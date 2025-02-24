@@ -25,14 +25,12 @@ def main():
     for strains in old_groups.values():
         old_names += list(strains)
     coverages = load_coverages(coverage_fname)
-    print(f"Old isotype groups: {len(old_groups)}  New isotype groups: {len(new_groups)}  Number of strains: {weights.shape[0]}")
 
     new_groups, compound_groups, stats = compare_groups(old_groups, new_groups, coverages)
 
-    tmp = "  ".join([f"{key}: {value}" for key, value in stats.items()])
-    print(f"Isotype comparison  {tmp}")
     write_new_groups(new_groups, refstrains)
     write_wi_isotype_sample_sheet(new_groups, refstrains)
+    write_summary(old_groups, new_groups, weights.shape[0], stats)
     plot_isotype_comparison(compound_groups, names, weights, cutoff)
 
 def load_gtcheck(fname):
@@ -330,6 +328,15 @@ def write_wi_isotype_sample_sheet(new_groups, refstrains):
         else:
             ref = name
         output.write(f"{ref}\n")
+    output.close()
+
+def write_summary(old_groups, new_groups, new_strains, stats):
+    output = open('isotype_summary.txt', 'w')
+    output.write(f"Old isotype groups\t{len(old_groups)}\n")
+    output.write(f"New isotype groups\t{len(new_groups)}\n")
+    output.write(f"Number of strains\t{num_strains}\n")
+    for key, value in stats.items():
+        output.write(f"{key}\t{value}\n")
     output.close()
 
 def plot_isotype_comparison(compound_groups, names, weights, cutoff):

@@ -5,10 +5,10 @@
     - Mike Sauria <mike.sauria@jhu.edu>
 */
 
-include { FIND_COVERAGES                           } from "./modules/local/find_coverages/main"
-include { ENCODE_VCF                               } from "./modules/python/encode_vcf/main"
-include { GTCHECK                                  } from "./modules/python/gtcheck/main"
-include { CALL_ISOTYPES                            } from "./modules/python/call_isotypes/main"
+include { FIND_COVERAGES } from "./modules/local/find_coverages/main"
+include { ENCODE_VCF     } from "./modules/python/encode_vcf/main"
+include { GTCHECK        } from "./modules/python/gtcheck/main"
+include { CALL_ISOTYPES  } from "./modules/python/call_isotypes/main"
 
 // Needed to publish results
 nextflow.preview.output = true
@@ -49,8 +49,8 @@ if (params.help == false & params.debug == false) {
         species = params.species
         if (params.bam_folder != null) {
                 bam_folder = params.bam_folder
-        } elif (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
-            bam_folder = "${params.data_path}/${species}/WI/alignments/"
+        } else if (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
+            bam_folder = "${params.dataDir}/${species}/WI/alignments/"
         } else {
             println """
             When using a species other than c_elegans, c_briggsae, or c_tropicalis,
@@ -60,13 +60,13 @@ if (params.help == false & params.debug == false) {
         }
         if (params.previous_isotypes != null) {
                 previous_isotypes = params.previous_isotypes
-        } elif (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
+        } else if (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
             if (species == "c_elegans") {
-                previous_isotypes = "${params.data_path}/${species}/WI/concordance/20231213/isotype_groups.tsv"
+                previous_isotypes = "${params.dataDir}/${species}/WI/concordance/20231213/isotype_groups.tsv"
             } else if (species == "c_briggsae") {
-                previous_isotypes = "${params.data_path}/${species}/WI/concordance/20240129/isotype_groups.tsv"
+                previous_isotypes = "${params.dataDir}/${species}/WI/concordance/20240129/isotype_groups.tsv"
             } else {
-                previous_isotypes = "${params.data_path}/${species}/WI/concordance/20231201/isotype_groups.tsv"
+                previous_isotypes = "${params.dataDir}/${species}/WI/concordance/20231201/isotype_groups.tsv"
             }
         } else {
             println """
@@ -77,7 +77,7 @@ if (params.help == false & params.debug == false) {
         }
         if (params.cutoff != null) {
                 cutoff = params.cutoff
-        } elif (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
+        } else if (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
             if (species == "c_elegans") {
                 cutoff = 0.99975
             } else if (species == "c_briggsae") {
@@ -179,6 +179,7 @@ workflow {
     CALL_ISOTYPES.out.groups      >> "."
     CALL_ISOTYPES.out.comparison  >> "."
     CALL_ISOTYPES.out.samplesheet >> "."
+    CALL_ISOTYPES.out.summary     >> "."
     GTCHECK.out.gtcheck           >> "."
 }
 

@@ -2,8 +2,8 @@ process ENCODE_VCF {
     label 'encode_vcf'
     errorStrategy 'retry'
     time { 4.hour * task.attempt }
-    cpus = { 2 * task.attempt }
-    memory = { 8.GB * task.attempt }
+    cpus = { 4 * task.attempt }
+    memory = { 16.GB * task.attempt }
 
     input:
     path vcf
