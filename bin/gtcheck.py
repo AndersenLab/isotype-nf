@@ -10,7 +10,7 @@ import numpy
 def main():
     vcf_fname, out_fname, nthreads = sys.argv[1:4]
     nthreads = int(nthreads)
-    tmp = numpy.load(vcf_fname, mmap_mode='r')
+    tmp = numpy.load(vcf_fname, mmap_mode='r', allow_pickle=True)
     strains = tmp.dtype.names[2:]
     triu = numpy.triu_indices(len(strains), 1)
     with multiprocessing.managers.SharedMemoryManager() as smm:
