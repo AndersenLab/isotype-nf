@@ -29,12 +29,15 @@ nextflow main.nf --vcf_file=/path/to/vcf_file --bam_location=/path/to/bams --pre
     parameters                 description                           Set/Default
     ==========                 ===========                           ========================
     --debug                    Use --debug to indicate debug mode    false
-    --species                  Species to call isotypes from         null
     --vcf_file                 All strains VCF file                  null
+
+    --species                  Species to call isotypes from         null
+    and / or
+    --cutoff                   Concordance cutoff for isotype calls  null
     --bam_location             Directory of BAM files                null
     --previous_isotypes        File containing previous isotypes     null
-    --cutoff                   Concordance cutoff for isotype calls  null
-    --username                                                       null
+    
+    username                                                         null
 
 	HELP: http://andersenlab.org/dry-guide/pipelines/pipeline-isotype/
 ```

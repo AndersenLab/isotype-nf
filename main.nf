@@ -83,7 +83,7 @@ if (params.help == false & params.debug == false) {
             } else if (species == "c_briggsae") {
                 cutoff = 0.99950
             } else {
-                cutoff = 0.99986
+                cutoff = 0.999914
             }
         } else {
             println """
@@ -126,12 +126,15 @@ nextflow main.nf --vcf_file=/path/to/vcf_file --bam_location=/path/to/bams --pre
     parameters                 description                           Set/Default
     ==========                 ===========                           ========================
     --debug                    Use --debug to indicate debug mode    ${params.debug}
-    --species                  Species to call isotypes from         ${species}
     --vcf_file                 All strains VCF file                  ${vcf_file}
+
+    --species                  Species to call isotypes from         ${species}
+    and / or
+    --cutoff                   Concordance cutoff for isotype calls  ${cutoff}
     --bam_location             Directory of BAM files                ${bam_folder}
     --previous_isotypes        File containing previous isotypes     ${previous_isotypes}
-    --cutoff                   Concordance cutoff for isotype calls  ${cutoff}
-    --username                                                       ${"whoami".execute().in.text}
+
+    username                                                         ${"whoami".execute().in.text}
 
 ---
 """

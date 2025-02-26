@@ -99,8 +99,11 @@ def cluster_discordance(weights):
         without = list(set(valid).difference(set([z])))
         diffs[z] = numpy.nanmin(W[z, without, 0]) - W[z, z, 1]
         Z[i, 2] = numpy.amin(diffs[valid])
-        triu = numpy.triu_indices(valid.shape[0], 1)
-        Z[i, 3] = 1 - numpy.amin(W[valid[triu[0]], valid[triu[1]], 0])
+        Z[i, 3] = 1 - numpy.amax(W[valid, valid, 1])
+    output = open("clustering.txt", "w")
+    for i in range(Z.shape[0]):
+        output.write(f"{Z[i, 0]}\t{Z[i, 1]}\t{Z[i, 2]:0.6f}\t{Z[i, 3]: 0.6f}\n")
+    output.close()
     return Z
 
 def cut_tree(Z, cutoff, names):
@@ -151,7 +154,7 @@ def load_coverages(fname):
     return coverages
 
 def compare_groups(old_groups, new_groups, coverages):
-    stats = {'identical': 0, 'split': 0, 'join': 0}
+    stats = {'new': 0, 'identical': 0, 'split': 0, 'join': 0}
     # Keep track of which isotype group each strain belongs to
     old_strain_iso = {}
     for i, group in old_groups.items():
@@ -199,11 +202,12 @@ def compare_groups(old_groups, new_groups, coverages):
                 iso_coverages = [(coverages[strain], strain) for strain in new_group]
                 iso_coverages.sort()
                 new_iso = iso_coverages[-1][1]
+                stats['new'] += 1
             # If old group matches, use its isotype reference strain
             else:
                 new_iso = list(old_isos)[0]
+                stats['identical'] += 1
             new_isotypes[new_iso] = new_group
-            stats['identical'] += 1
         # If there are more than one new or old groups, there has been a join/split and it is a compound group
         else:
             new_group_isos = {}
@@ -287,6 +291,13 @@ def compare_groups(old_groups, new_groups, coverages):
             old_compound = []
             for n in best_path:
                 if len(new_compound) == 0 or new_compound[-1][0] != nodes[n]['new_iso']:
+                    if len(new_compound) > 0:
+                        new_strains = set(new_isotypes[new_compound[-1][0]])
+                        for o_iso in old_isos:
+                            new_strains = new_strains.difference(old_groups[o_iso])
+                        if len(new_strains) > 0:
+                            new_compound[-1][1] += list(new_strains)
+                            old_compound.append(["NA", list(new_strains)])
                     new_compound.append([nodes[n]['new_iso'], list(nodes[n]['strains'])])
                 else:
                     new_compound[-1][1] += nodes[n]['strains']
@@ -294,8 +305,13 @@ def compare_groups(old_groups, new_groups, coverages):
                     old_compound.append([nodes[n]['old_iso'], list(nodes[n]['strains'])])
                 else:
                     old_compound[-1][1] += nodes[n]['strains']
+            new_strains = set(new_isotypes[new_compound[-1][0]])
+            for o_iso in old_isos:
+                new_strains = new_strains.difference(old_groups[o_iso])
+            if len(new_strains) > 0:
+                new_compound[-1][1] += list(new_strains)
+                old_compound.append(["NA", list(new_strains)])
             compound_isos.append([old_compound, new_compound])
-
         # Don't reexamine already parsed new groups
         for new_iso_num in new_isos:
             used.add(new_iso_num)
@@ -330,7 +346,7 @@ def write_wi_isotype_sample_sheet(new_groups, refstrains):
         output.write(f"{ref}\n")
     output.close()
 
-def write_summary(old_groups, new_groups, new_strains, stats):
+def write_summary(old_groups, new_groups, num_strains, stats):
     output = open('isotype_summary.txt', 'w')
     output.write(f"Old isotype groups\t{len(old_groups)}\n")
     output.write(f"New isotype groups\t{len(new_groups)}\n")
@@ -348,14 +364,21 @@ def plot_isotype_comparison(compound_groups, names, weights, cutoff):
             strains = []
             new_isos = []
             old_isos = []
+            old_isogroups_na = []
             for x in new_isogroups:
                 strains += x[1]
                 new_isos += [x[0]] * len(x[1])
+            prev_iso = ""
             for x in old_isogroups:
                 old_isos += [x[0]] * len(x[1])
+                if x[0] == "NA" or x[0] == prev_iso:
+                    old_isogroups_na[-1] += x[1]
+                else:
+                    old_isogroups_na.append(x[1])
+                    prev_iso = x[0]
             indices = [name2index[name] for name in strains]
             N = len(indices)
-            fig, ax = plt.subplots(1, 2, figsize=(N / 2 + 2, N / 4 + 3))
+            fig, ax = plt.subplots(1, 2, figsize=(N / 2 + 5.5, N / 4 + 3.0))
             indices = numpy.array(indices)
             W = weights[indices, :][:, indices]
             W[numpy.arange(indices.shape[0]), numpy.arange(indices.shape[0])] = 0
@@ -364,19 +387,51 @@ def plot_isotype_comparison(compound_groups, names, weights, cutoff):
             ax[0].set_xticklabels([f"{strains[j]} ({old_isos[j]})" for j in range(N)], rotation=35, ha='right')
             ax[0].set_yticks(numpy.arange(N))
             ax[0].set_yticklabels([f"{strains[j]} ({old_isos[j]})" for j in range(N)])
-            ax[0].set_title("old groups")
+            wo_min = 0
+            wo_max = 1
+            wi = 0
+            for x in old_isogroups_na:
+                within = numpy.array([name2index[name] for name in x])
+                wi = max(wi, numpy.amax(weights[within, :][:, within]))
+                if len(old_isogroups_na) > 1:
+                    without = numpy.array(list(set(indices).difference(set(within))))
+                    wo_max = min(wo_max, numpy.amin(weights[within, :][:, without]))
+                    wo_min = max(wo_min, numpy.amax(weights[within, :][:, without]))
+            if len(old_isogroups_na) > 1:
+                wo = f"{1 - wo_min:0.6f}-{1 - wo_max:0.6f}"
+            else:
+                wo = "NA"
+            wi = f"{1 - wi:0.6f}"
+            ax[0].set_title(f"old groups\nmin within:{wi}\nbetween:{wo}")
             ax[1].imshow(1-W, vmin=cutoff, vmax=1)
             ax[1].set_xticks(numpy.arange(N))
             ax[1].set_xticklabels([f"{strains[j]} ({new_isos[j]})" for j in range(N)], rotation=35, ha='right')
             ax[1].set_yticks(numpy.arange(N))
             ax[1].set_yticklabels([f"{strains[j]} ({new_isos[j]})" for j in range(N)])
-            ax[1].set_title("new groups")
+            wo_min = 0
+            wo_max = 1
+            wi = 0
+            for x in new_isogroups:
+                within = numpy.array([name2index[name] for name in x[1]])
+                wi = max(wi, numpy.amax(weights[within, :][:, within]))
+                if len(new_isogroups) > 1:
+                    without = numpy.array(list(set(indices).difference(set(within))))
+                    wo_max = min(wo_max, numpy.amin(weights[within, :][:, without]))
+                    wo_min = max(wo_min, numpy.amax(weights[within, :][:, without]))
+            if len(new_isogroups) > 1:
+                wo = f"{1 - wo_min:0.6f}-{1 - wo_max:0.6f}"
+            else:
+                wo = "NA"
+            wi = f"{1 - wi:0.6f}"
+            ax[1].set_title(f"new groups\nmin within:{wi}\nbetween:{wo}")
+            prev_old = old_isos[0]
             for j in range(1, N):
-                if old_isos[j] != old_isos[j - 1]:
+                if old_isos[j] != "NA" and old_isos[j] != prev_old:
                     ax[0].vlines([j - 0.5], ymin=-0.5, ymax=N - 0.5, color='white', lw=5)
                     ax[0].hlines([j - 0.5], xmin=-0.5, xmax=N - 0.5, color='white', lw=5)
                     ax[0].vlines([j - 0.5], ymin=-0.5, ymax=N - 0.5, color='black', lw=2)
                     ax[0].hlines([j - 0.5], xmin=-0.5, xmax=N - 0.5, color='black', lw=2)
+                    prev_old = old_isos[j]
                 if new_isos[j] != new_isos[j - 1]:
                     ax[1].vlines([j - 0.5], ymin=-0.5, ymax=N - 0.5, color='white', lw=5)
                     ax[1].hlines([j - 0.5], xmin=-0.5, xmax=N - 0.5, color='white', lw=5)
