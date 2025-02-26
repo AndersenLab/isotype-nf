@@ -137,14 +137,13 @@ def load_prev_isotypes(fname, names):
         line = line.rstrip().split("\t")
         strain = line[cols['strain']]
         isotype = line[cols['isotype']]
-        refstrain = bool(cols['isotype_ref_strain'])
+        refstrain = line[cols['isotype_ref_strain']]
         if isotype == "NA":
             continue
         if strain not in name_set:
             continue
+        refstrains[isotype] = refstrain
         groups.setdefault(isotype, [])
-        if refstrain:
-            refstrains[isotype] = strain
         groups[isotype].append(strain)
     fs.close()
     return groups, refstrains
@@ -325,6 +324,10 @@ def write_new_groups(new_groups, refstrains):
         values.sort()
         groups.append((values, key))
     groups.sort()
+    if "ECA1309" in refstrains:
+        print("ECA1309", refstrains["ECA1309"])
+    if "ECA1306" in refstrains:
+        print("ECA1306", refstrains["ECA1306"])
     output = open("isotype_groups.tsv", "w")
     output.write("group\tstrain\tisotype\tisotype_ref_strain\n")
     for i, (group, isotype) in enumerate(groups):

@@ -5,10 +5,11 @@
     - Mike Sauria <mike.sauria@jhu.edu>
 */
 
-include { FIND_COVERAGES } from "./modules/local/find_coverages/main"
-include { ENCODE_VCF     } from "./modules/python/encode_vcf/main"
-include { GTCHECK        } from "./modules/python/gtcheck/main"
-include { CALL_ISOTYPES  } from "./modules/python/call_isotypes/main"
+include { FIND_COVERAGES    } from "./modules/local/find_coverages/main"
+include { ENCODE_VCF        } from "./modules/python/encode_vcf/main"
+include { GTCHECK           } from "./modules/python/gtcheck/main"
+include { CALL_ISOTYPES     } from "./modules/python/call_isotypes/main"
+include { ADD_UNSEQ_STRAINS } from "./modules/local/add_unseq_strains/main"
 
 // Needed to publish results
 nextflow.preview.output = true
@@ -47,6 +48,9 @@ if (params.help == false & params.debug == false) {
         species = params.species
     } else {
         species = params.species
+        if (species == "c_elegans") {
+            unsequenced_strains = "${workflow.projectDir}/data/c_elegans_unsequenced_strains.tsv"
+        }
         if (params.bam_folder != null) {
                 bam_folder = params.bam_folder
         } else if (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
@@ -156,9 +160,9 @@ workflow {
     ch_versions = Channel.empty()
 
     // Open vcf file
-    vcf_ch = Channel.fromPath(vcf_file, checkIfExists: true)
+    ch_vcf = Channel.fromPath(vcf_file, checkIfExists: true)
         .ifEmpty { exit 1, "vcf file not found" }
-    ENCODE_VCF( vcf_ch,
+    ENCODE_VCF( ch_vcf,
                 Channel.fromPath("${workflow.ProjectDir}/bin/encode_vcf.py") )
 
     // Perform gtcheck
@@ -166,9 +170,9 @@ workflow {
              Channel.fromPath("${workflow.ProjectDir}/bin/gtcheck.py") )
 
     // Find coverages
-    bam_ch = Channel.fromPath(bam_folder, checkIfExists: true)
+    ch_bams = Channel.fromPath(bam_folder, checkIfExists: true)
         .ifEmpty { exit 1, "bam folder not found" }
-    FIND_COVERAGES( bam_ch )
+    FIND_COVERAGES( ch_bams )
 
     // Assign isotypes
     CALL_ISOTYPES( GTCHECK.out.gtcheck,
@@ -177,6 +181,19 @@ workflow {
                    FIND_COVERAGES.out.coverages,
                    cutoff )
 
+    if (species == "c_elegans") {
+        // If finding isotypes for c_elegans, need to add in unsequenced historical samples
+        LOCAL_ADD_UNSEQ_STRAINS( CALL_ISOTYPES.out.groups,
+                                 Channel.fromPath( unsequenced_strains) )
+        ch_all_groups = LOCAL_ADD_UNSEQ_STRAINS.out.groups
+    } else {
+        ch_all_groups = Channel.empty()
+    }
+
+    // Collate and save software versions
+    ch_versions
+        .collectFile(name: 'workflow_software_versions.txt', sort: true, newLine: true)
+        .set { ch_collated_versions }
 
     publish:
     CALL_ISOTYPES.out.groups      >> "."
@@ -184,6 +201,8 @@ workflow {
     CALL_ISOTYPES.out.samplesheet >> "."
     CALL_ISOTYPES.out.summary     >> "."
     GTCHECK.out.gtcheck           >> "."
+    ch_all_groups                 >> "."
+    ch_collated_versions          >> "."
 }
 
 // Current bug that publish doesn't work without an output closure
