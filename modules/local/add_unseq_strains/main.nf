@@ -18,24 +18,24 @@ process ADD_UNSEQ_STRAINS {
     echo -e "group\tstrain\tisotype\tisotype_ref_strain" > isotype_groups_all.tsv
     awk 'BEGIN{OFS="\t"}{
           if ( NR == FNR ){
-            if ( $1 !~ /^group/ ){
-              if ( $3 in ISOTYPES ){
-                ISOTYPES[$3]=ISOTYPES[$3]","$2;
+            if ( \$1 !~ /^group/ ){
+              if ( \$3 in ISOTYPES ){
+                ISOTYPES[\$3]=ISOTYPES[\$3]","\$2;
               } else {
-                ISOTYPES[$3]=$2;
-                REFSTRAINS[$3]=$4;
-                GROUPNUM[$3]=$1;
+                ISOTYPES[\$3]=\$2;
+                REFSTRAINS[\$3]=\$4;
+                GROUPNUM[\$3]=\$1;
               }
             }
           }
           else {
-            if ( $1 !~ /^strain/ ){
-              if ( $2 in ISOTYPES ){
-                ISOTYPES[$2]=ISOTYPES[$2]","$1;
+            if ( \$1 !~ /^strain/ ){
+              if ( \$2 in ISOTYPES ){
+                ISOTYPES[\$2]=ISOTYPES[\$2]","\$1;
               } else {
-                ISOTYPES[$2]=$1;
-                REFSTRAINS[$2]=$2;
-                GROUPNUM[$2]=length(ISOTYPES)+1;
+                ISOTYPES[\$2]=\$1;
+                REFSTRAINS[\$2]=\$2;
+                GROUPNUM[\$2]=length(ISOTYPES)+1;
               }
             }
           }
