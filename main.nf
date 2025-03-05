@@ -22,7 +22,7 @@ if (params.debug) {
     vcf_file = "${workflow.projectDir}/test_data/hard-filtered.vcf.gz"
     previous_isotypes = "${workflow.projectDir}/test_data/old_isotype_groups.tsv"
     species = "c_elegans"
-    cutoff = 0.99975
+    cutoff = 0.9997
 }
 
 if (params.help == false & params.debug == false) {
@@ -83,11 +83,11 @@ if (params.help == false & params.debug == false) {
                 cutoff = params.cutoff
         } else if (species == "c_elegans" | species == "c_briggsae" | species == "c_tropicalis") {
             if (species == "c_elegans") {
-                cutoff = 0.99975
+                cutoff = 0.9997
             } else if (species == "c_briggsae") {
-                cutoff = 0.99950
+                cutoff = 0.9997
             } else {
-                cutoff = 0.999914
+                cutoff = 0.999915
             }
         } else {
             println """
@@ -198,7 +198,6 @@ workflow {
     publish:
     CALL_ISOTYPES.out.groups      >> "."
     CALL_ISOTYPES.out.comparison  >> "."
-    CALL_ISOTYPES.out.samplesheet >> "."
     CALL_ISOTYPES.out.summary     >> "."
     GTCHECK.out.gtcheck           >> "."
     ch_all_groups                 >> "."

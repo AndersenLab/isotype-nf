@@ -29,7 +29,7 @@ def main():
     new_groups, compound_groups, stats = compare_groups(old_groups, new_groups, coverages)
 
     write_new_groups(new_groups, refstrains)
-    write_wi_isotype_sample_sheet(new_groups, refstrains)
+    # write_wi_isotype_sample_sheet(new_groups, refstrains)
     write_summary(old_groups, new_groups, weights.shape[0], stats)
     plot_isotype_comparison(compound_groups, names, weights, cutoff)
 
@@ -324,10 +324,6 @@ def write_new_groups(new_groups, refstrains):
         values.sort()
         groups.append((values, key))
     groups.sort()
-    if "ECA1309" in refstrains:
-        print("ECA1309", refstrains["ECA1309"])
-    if "ECA1306" in refstrains:
-        print("ECA1306", refstrains["ECA1306"])
     output = open("isotype_groups.tsv", "w")
     output.write("group\tstrain\tisotype\tisotype_ref_strain\n")
     for i, (group, isotype) in enumerate(groups):

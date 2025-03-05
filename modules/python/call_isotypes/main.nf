@@ -13,11 +13,10 @@ process CALL_ISOTYPES {
     val concordance_cutoff
 
     output:
-    path "isotype_groups.tsv",          emit: groups
-    path "isotype_comparison.pdf",      emit: comparison
-    path "wi_isotype_sample_sheet.txt", emit: samplesheet
-    path "isotype_summary.txt",         emit: summary
-    path "versions.yml",                emit: versions
+    path "isotype_groups.tsv",                                            emit: groups
+    tuple path("isotype_comparison.pdf"), path("isotype_comparison.txt"), emit: comparison
+    path "isotype_summary.txt",                                           emit: summary
+    path "versions.yml",                                                  emit: versions
     
     when:
     task.ext.when == null || task.ext.when
@@ -26,6 +25,7 @@ process CALL_ISOTYPES {
     def args = task.ext.args ?: ''
     """
     python call_isotypes.py gtcheck.txt ${previous_isotypes} ${coverages} ${concordance_cutoff}
+    python compare_isotypes_calls.py gtcheck.txt ${previous_isotypes} isotype_comparison.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -39,7 +39,7 @@ process CALL_ISOTYPES {
     """
     touch isotype_groups.txt
     touch isotype_comparison.pdf
-    touch wi_isotype_sample_sheet.txt
+    touch isotype_comparison.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
