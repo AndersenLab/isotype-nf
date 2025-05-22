@@ -177,15 +177,16 @@ workflow {
     // Assign isotypes
     CALL_ISOTYPES( GTCHECK.out.gtcheck,
                    Channel.fromPath("${workflow.ProjectDir}/bin/call_isotypes.py"),
+                   Channel.fromPath("${workflow.ProjectDir}/bin/compare_isotype_calls.py"),
                    Channel.fromPath(previous_isotypes),
                    FIND_COVERAGES.out.coverages,
                    cutoff )
 
     if (species == "c_elegans") {
         // If finding isotypes for c_elegans, need to add in unsequenced historical samples
-        LOCAL_ADD_UNSEQ_STRAINS( CALL_ISOTYPES.out.groups,
-                                 Channel.fromPath( unsequenced_strains) )
-        ch_all_groups = LOCAL_ADD_UNSEQ_STRAINS.out.groups
+        ADD_UNSEQ_STRAINS( CALL_ISOTYPES.out.groups,
+                           Channel.fromPath( unsequenced_strains) )
+        ch_all_groups = ADD_UNSEQ_STRAINS.out.groups
     } else {
         ch_all_groups = Channel.empty()
     }
@@ -196,6 +197,7 @@ workflow {
         .set { ch_collated_versions }
 
     publish:
+    ENCODE_VCF.out.encoded        >> "."
     CALL_ISOTYPES.out.groups      >> "."
     CALL_ISOTYPES.out.comparison  >> "."
     CALL_ISOTYPES.out.summary     >> "."

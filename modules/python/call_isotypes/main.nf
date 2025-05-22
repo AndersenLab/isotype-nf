@@ -8,7 +8,8 @@ process CALL_ISOTYPES {
     input:
     path "gtcheck.txt"
     path "call_isotypes.py"
-    path previous_isotypes
+    path "compare_isotype_calls.py"
+    path "previous_isotypes.tsv"
     path coverages
     val concordance_cutoff
 
@@ -24,8 +25,9 @@ process CALL_ISOTYPES {
     script:
     def args = task.ext.args ?: ''
     """
-    python call_isotypes.py gtcheck.txt ${previous_isotypes} ${coverages} ${concordance_cutoff}
-    python compare_isotypes_calls.py gtcheck.txt ${previous_isotypes} isotype_comparison.txt
+    export MPLCONFIGDIR="."
+    python call_isotypes.py gtcheck.txt previous_isotypes.tsv ${coverages} ${concordance_cutoff}
+    python compare_isotype_calls.py gtcheck.txt previous_isotypes.tsv isotype_comparison.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
